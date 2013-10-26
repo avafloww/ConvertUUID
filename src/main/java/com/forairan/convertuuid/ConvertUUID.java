@@ -34,7 +34,7 @@ import joptsimple.OptionSet;
  */
 public class ConvertUUID {
 
-    private static final int MAX_SIMULTANEOUS_JOBS = 10;
+    private static final int MAX_SIMULTANEOUS_JOBS = 200;
 
     public static void main(String[] args) throws Exception {
         OptionParser parser = new OptionParser() {
@@ -81,6 +81,7 @@ public class ConvertUUID {
                 System.err.println("Input file does not exist!");
                 return;
             } else {
+                System.out.println("Reading input file, this may take a while...");
                 BufferedReader br = new BufferedReader(new FileReader(inputFile));
 
                 String line = null;
@@ -91,9 +92,7 @@ public class ConvertUUID {
                     }
 
                     line = line.trim();
-                    if (!usernames.contains(line)) {
-                        usernames.add(line);
-                    }
+                    usernames.add(line);
                 }
 
                 br.close();

@@ -40,6 +40,8 @@ public class Converter implements Runnable {
     private final int maxJobs;
     private final HttpProfileRepository repository = new HttpProfileRepository();
     private final PrintWriter output;
+    private long lastUpdate = 0L;
+    private int countComplete = 0;
 
     public Converter(List<String> usernames, PrintWriter output, int maxJobs) {
         this.usernames = usernames;
@@ -49,6 +51,7 @@ public class Converter implements Runnable {
 
     public void run() {
         long startTime = System.currentTimeMillis();
+        lastUpdate = startTime;
         System.out.println("Converter spawned, " + usernames.size() + " usernames to process.");
 
         while (usernames.size() > 0) {
@@ -68,11 +71,18 @@ public class Converter implements Runnable {
                 ConversionJob job = i.next();
                 if (job.isComplete()) {
                     results.put(job.getUsername(), job.getUUID());
+                    countComplete++;
                     i.remove();
                 }
             }
             i = null;
 
+            // Display progress
+            if (System.currentTimeMillis() - lastUpdate >= 1000) {
+                lastUpdate = System.currentTimeMillis();
+                System.out.println("Progress: " + countComplete + " conversions completed.");
+            }
+            
             // Sleep a bit
             try {
                 Thread.sleep(50);
