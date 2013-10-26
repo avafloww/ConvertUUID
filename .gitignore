@@ -1,0 +1,11 @@
+# Maven
+target
+target/*
+dependency-reduced-pom.xml
+
+# NetBeans
+nbactions.xml
+nb-configuration.xml
+
+# Temporary files
+players.txt
