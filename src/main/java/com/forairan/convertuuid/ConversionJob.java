@@ -18,44 +18,48 @@ package com.forairan.convertuuid;
 
 import com.mojang.api.profiles.Profile;
 import com.mojang.api.profiles.ProfileCriteria;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * ConversionJob handles conversion of a single username.
+ * ConversionJob handles conversion of a batch of usernames.
  *
  * @author Devin Ryan
  */
 public class ConversionJob implements Runnable {
 
+    public static final int MAX_USERNAMES = 100;
     private static final String AGENT = "minecraft";
     private final Converter converter;
-    private final String username;
-    private String uuid;
+    private final List<String> usernames;
+    private final Map<String, String> results = new HashMap<String, String>();
     private final AtomicBoolean complete = new AtomicBoolean(false);
 
-    public ConversionJob(Converter converter, String username) {
+    public ConversionJob(Converter converter, List<String> usernames) {
         this.converter = converter;
-        this.username = username;
+        this.usernames = usernames;
     }
 
     public void run() {
-        Profile[] profiles = converter.getRepository().findProfilesByCriteria(new ProfileCriteria(username, AGENT));
-        if (profiles.length == 1) {
-            uuid = profiles[0].getId();
-        } else {
-            uuid = "";
+        // Create a ProfileCriteria for each username
+        ProfileCriteria[] criteriaList = new ProfileCriteria[usernames.size()];
+        for (int i = 0; i < criteriaList.length; i++) {
+            criteriaList[i] = new ProfileCriteria(usernames.get(i), AGENT);
+        }
+
+        // Query Mojang's servers and store the results
+        Profile[] profiles = converter.getRepository().findProfilesByCriteria(criteriaList);
+        for (Profile profile : profiles) {
+            results.put(profile.getName(), profile.getId());
         }
         
         complete.set(true);
-        profiles = null;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getUUID() {
-        return uuid;
+    public Map<String, String> getResults() {
+        return results;
     }
 
     public boolean isComplete() {

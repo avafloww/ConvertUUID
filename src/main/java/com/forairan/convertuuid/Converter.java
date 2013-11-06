@@ -41,6 +41,7 @@ public class Converter implements Runnable {
     private final HttpProfileRepository repository = new HttpProfileRepository();
     private final PrintWriter output;
     private long lastUpdate = 0L;
+    private int usernamesPtr = 0; // Marks the current processing position in usernames
     private int countComplete = 0;
 
     public Converter(List<String> usernames, PrintWriter output, int maxJobs) {
@@ -54,14 +55,18 @@ public class Converter implements Runnable {
         lastUpdate = startTime;
         System.out.println("Converter spawned, " + usernames.size() + " usernames to process.");
 
-        while (usernames.size() > 0) {
-            if (jobs.size() < maxJobs) {
+        while (jobs.size() > 0 || usernamesPtr < usernames.size()) {
+            if (jobs.size() < maxJobs && usernamesPtr < usernames.size()) {
                 // There's room for more jobs, spawn them accordingly
                 for (int i = 0; i < maxJobs - jobs.size(); i++) {
-                    String username = usernames.remove(0);
-                    ConversionJob job = new ConversionJob(this, username);
+                    // Determine the list subset we're going to use in the new job
+                    int oldPtr = usernamesPtr;
+                    usernamesPtr += Math.min(ConversionJob.MAX_USERNAMES, usernames.size() - usernamesPtr);
+                    List<String> jobUsernames = usernames.subList(oldPtr, usernamesPtr);
+
+                    ConversionJob job = new ConversionJob(this, jobUsernames);
                     jobs.add(job);
-                    new Thread(job, "Conversion job: " + username).start();
+                    new Thread(job, "Conversion job: Usernames " + oldPtr + " to " + usernamesPtr).start();
                 }
             }
 
@@ -70,8 +75,8 @@ public class Converter implements Runnable {
             while (i.hasNext()) {
                 ConversionJob job = i.next();
                 if (job.isComplete()) {
-                    results.put(job.getUsername(), job.getUUID());
-                    countComplete++;
+                    results.putAll(job.getResults());
+                    countComplete += job.getResults().size();
                     i.remove();
                 }
             }
