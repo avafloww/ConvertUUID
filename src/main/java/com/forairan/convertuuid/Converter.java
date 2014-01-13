@@ -58,10 +58,12 @@ public class Converter implements Runnable {
             if (jobs.size() < maxJobs) {
                 // There's room for more jobs, spawn them accordingly
                 for (int i = 0; i < maxJobs - jobs.size(); i++) {
-                    String username = usernames.remove(0);
-                    ConversionJob job = new ConversionJob(this, username);
-                    jobs.add(job);
-                    new Thread(job, "Conversion job: " + username).start();
+                    if (usernames.size() > 0) {
+                        String username = usernames.remove(0);
+                        ConversionJob job = new ConversionJob(this, username);
+                        jobs.add(job);
+                        new Thread(job, "Conversion job: " + username).start();
+                    }
                 }
             }
 
